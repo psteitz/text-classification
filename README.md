@@ -3,6 +3,7 @@ This repo contains examples of three different ways to do text classification. T
 
 ## Supervised transformer-based
 Start with a pre-trained transformer model, add layer to classify embeddings of input texts anf fine-tune with labelled data.
+See [HuggingFace tutorial](https://huggingface.co/docs/transformers/tasks/sequence_classification).
 * Usually most accurate 
 * Always the fastest
 * Always lowest cost
@@ -20,7 +21,7 @@ Translate the classfication problem into an inference problem
 
 Look at entailment probabilities for 
 * __hypothesis__ "This text is about {}" and 
-* __premise__ text to be classified with {} filled in for each of the labels
+* __premise__ text to be classified
 
 The mnli model gives us three probabilities for each classufication label against each of the input texts:
 * probability of entailment - the probability that the premise entails the hypothesis
