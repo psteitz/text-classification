@@ -1,9 +1,11 @@
 from ast import List
 from datetime import datetime
+from pathlib import Path
+import random
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 from transformers.pipelines.pt_utils import KeyDataset
-from datasets import load_dataset, Dataset
+from datasets import load_dataset, Dataset, load_from_disk
 
 # yahoo questions categories
 yahoo_classes = [
@@ -38,19 +40,46 @@ hypothesis_templates = ["This example is {}.",
                         "This text comes under the heading {}."
                         ]
 
+# Directory where augmented datasets are stored
+AUGMENTED_DATASET_DIR = "./hf_yahoo_data_augmented"
+
+MNLI = "facebook/bart-large-mnli"
+HF_ZERO_SHOT = "zero-shot-classification"
+SUPERVISED = "supervised"
+
+DEFAULT_SEED = 42
+
 # Facebook BART model fine-tuned for NLI tasks
 nli_model = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli', truncation=True)
 tokenizer = AutoTokenizer.from_pretrained('facebook/bart-large-mnli')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 nli_model.to(device)
 
+def fix_seed(seed: int = DEFAULT_SEED, with_cuda : bool = False):
+    """
+    Seed for the random number generator.
+
+    Setting a fixed seed will make sampling-based results repeatable.
+    By default, only the python random number generator is seeded.
+    Set with_cuda=True to also seed the CUDA and torch generator.
+
+    Arguments:
+        seed - the seed value to use
+        with_cuda - if True, also seed the CUDA and torch generators
+    """
+    random.seed(seed)
+    if with_cuda:
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+
 def huggingface_zero_shot_classify(sequence, labels : List(str)) -> str:
     """
         Classify the sequence according to the given labels using HuggingFace zero-shot classifier.
 
         Arguments:
-        sequence - text to classify
-        hypothesis - classification labels
+          sequence  text to classify
+          labels    array of classification labels
 
         Return:
         best classification label
@@ -60,9 +89,10 @@ def huggingface_zero_shot_classify(sequence, labels : List(str)) -> str:
                       model="facebook/bart-large-mnli", device=0)
     # 
     # classifer(sequence, labels) returns a dict that looks like:
+    #
     # {'sequence': sequence, 
     #  'labels': labels re-ordered so highest probability is first,
-    #   'scores': parallel array of probabilities for the re-ordered labels (so highest is first)
+    #  'scores': probabilities for the re-ordered labels (so highest is first)
     # }
     return classifier(sequence, labels)["labels"][0]   
  
@@ -87,7 +117,7 @@ def raw_nli(premise, hypothesis) -> List(float):
 
 
 # Read in huggingface yahoo_answers_topics dataset and return a list of dicts
-def read_huggingface_dataset(split : str) -> List(dict):
+def load_huggingface_dataset_to_list(split : str) -> List(dict):
     """
     Load the designated split of the huggingface yahoo_answers_topics dataset and return a list of dicts
     with these keys:
@@ -116,16 +146,24 @@ def fill_text(rec):
     rec["text"] = rec["question_title"] + " " + rec["question_content"] + " " + rec["best_answer"]
     return rec
 
-def read_huggingface_dataset_concat(split : str) -> Dataset:
+def augment_huggingface_dataset(split : str) -> Dataset:
     """
     Load the designated split of the huggingface yahoo_answers_topics dataset and augment it with a new column named "text",
-    combining the three text columns in the source dataset into one.
+    combining the three text columns in the source dataset into one. Then drop the three source text columns.
+
+    Arguments:
+        split - the split of the dataset to load
+
+    Return:
+        the augmented dataset
     """
     raw_dataset = load_dataset('yahoo_answers_topics')
     augmented_dataset = raw_dataset[split]
     new_column = ["null"] * len(augmented_dataset)
     augmented_dataset = augmented_dataset.add_column("text", new_column)
-    return augmented_dataset.map(fill_text)
+    augmented_dataset = augmented_dataset.map(fill_text)
+    augmented_dataset.remove_columns(["question_title", "question_content", "best_answer"])
+    return augmented_dataset
 
 def simple_zero_shot_hf():
     print("HuggingFace zero-shot classifier: ")
@@ -149,56 +187,142 @@ def simple_raw_nli():
                             truncation=True)
     print(nli_model(x.to(device)))
 
-def classify_iterate_hf_dataset():
+def classify_iterate_hf_dataset(split: str, num_records : int):
+    """
+    Read the first num_records records from huggingface yahoo_answers_topics dataset
+    into a list of dicts and then iterate over it, classifying records by feeding them
+    to the classifier one at a time.
+
+    Arguments:
+        num_records - number of records to read from the dataset and classify
+        split - the split of the dataset to load
+    """
     print("Read huggingface dataset into list of dicts and start manually iterating and classfiying...")
-    records = read_huggingface_dataset("test");
-    print("Read ", len(records), " records from huggingface yahoo_answers_topics train split");
+    records = load_huggingface_dataset_to_list(split).select(range(num_records));
+    indices = random.sample(range(0, len(records)), num_records)
+    records = records.select(indices)
+    print("Read ", len(records), " records from huggingface yahoo_answers_topics " + split + " split");
     print("First record: ", records[0])
-    for i in range(10):
+    for i in range(num_records):
         print(records[i]["classification"], " ", yahoo_classes[records[i]["classification"]])
         print(records[i]["text"])
         print(huggingface_zero_shot_classify(records[i]["text"], yahoo_classes))
 
-def classify_pipe_directly():
-    print("Run the dataset directly through the pipline")
-    classifier = pipeline("zero-shot-classification",
-                        model="facebook/bart-large-mnli", device=0)
+def classify_pipe_directly(split: str, num_records : int = -1):
+    """
+    Pipes the designated split of huggingface yahoo_answers_topics dataset directly
+    through the zero-shot-classification model.
+
+    1. Load the huggingface yahoo_answers_topics dataset.
+    2. Augment it with a new column named "text", combining the three text columns in the source dataset into one
+    3. Pipe the augmented dataset through the zero-shot-classification model.
+    4. Add model prediction output columns to the dataset.
+    5. Save the augmented dataset to AUGMENTED_DATASET_DIR.
+
+    Optional num_records argument limits the number of records read from the dataset. If this argument is present
+    and positive, a random sample of num_records records is drawn from the dataset.
+
+    Arguments:
+        split - the split of the dataset to load
+        num_records - number of records to pipe to the model.  If negative or missing, use all records.
+    """
+    print("\nclassify_pipe_directly start time: " + datetime.now().strftime("%H:%M:%S"))
+    print("\nRunning the dataset directly through the pipline")
+
+    classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=0)
     print("Loading and augmenting dataset...")
-    dataset = read_huggingface_dataset_concat("test")
-    print("Read ", len(dataset), " records from huggingface yahoo_answers_topics test split.")
+    ds = augment_huggingface_dataset(split)
+    if num_records < 0:
+        dataset = ds
+    else:
+        indices = random.sample(range(0, len(ds)), num_records)
+        dataset = ds.select(indices);
+    print("Read ", len(dataset), " records from huggingface yahoo_answers_topics " + split + " split.")
     print("First record: ", dataset[0])
     print("Running through pipline...")
 
     # Create new columns for model output
-    sequence_track_column = [''] * len(dataset)
-    labels_column = [['']*len(yahoo_classes)] * len(dataset)
-    scores_column = [[0]*len(yahoo_classes)] * len(dataset)
+    labels_column = []
+    scores_column = []
+    # Add a column to track hash of text
+    sequence_track_column = []
 
     # Run the model on the dataset and fill new columns from model output
     ct = 0
     for out in classifier(KeyDataset(dataset, "text"), yahoo_classes):
-        # print("out = " + out)
-        sequence_track_column[ct] = out["sequence"]
-        scores_column[ct] = out["scores"]
-        labels_column[ct] = out["labels"]
+        sequence_track_column.append(hash(out["sequence"]))
+        scores_column.append(out["scores"])
+        labels_column.append(out["labels"])
         if ct % 1000 == 0:
             print(str(ct) + "  " + datetime.now().strftime("%H:%M:%S"))
-            """
-            print("model output")
-            print(out)
-            print("dataset record")
-            print(dataset[ct])
-            print()
-            """
         ct += 1
 
     # Add columns to dataset
+    print ("Adding columns to dataset...")
+    print()
     dataset = dataset.add_column("labels", labels_column)
     dataset = dataset.add_column("scores", scores_column)
     dataset = dataset.add_column("sequence_track", sequence_track_column)
 
-    # Display the first 5 records of the dataset
-    print(dataset[:5])
+    # Display the first record  of the dataset
+    print(dataset[0])
 
+    print("Saving augmented dataset to disk...")
+    # Save the augmented dataset to disk
+    Path(AUGMENTED_DATASET_DIR).mkdir(parents=True, exist_ok=True)
+    dataset.save_to_disk(AUGMENTED_DATASET_DIR)
+    print("\nclassify_pipe_directly end time: " + datetime.now().strftime("%H:%M:%S"))
 
-classify_pipe_directly()
+def yahoo_index_from_text(class_label: str) -> int:
+    """
+    Return the index of class_label in yahoo_classes.
+    """
+    for i in range(0, len(yahoo_classes)):
+        if class_label == yahoo_classes[i]:
+            return i 
+    print("Error: yahoo class not found: " + class_label)
+    return -1
+
+def check_hashes():
+    """
+    Load the augmented dataset from disk.
+    Iterate over the dataset, verifying that the hash of the text matches the hash of the sequence.
+    """
+    ds = load_from_disk(AUGMENTED_DATASET_DIR)
+    print("Read ", len(ds), " records from " + AUGMENTED_DATASET_DIR)
+    for i in range(0, len(ds)):
+        if hash(ds[i]["text"]) != ds[i]["sequence_track"]:
+            print("Error: hash mismatch at index " + str(i))
+            print("Text: ", ds[i]["text"])
+            print("Sequence: ", ds[i]["sequence"])
+            print("Hash of text: ", hash(ds[i]["text"]))
+            print("Hash of sequence: ", ds[i]["sequence_track"])
+            return
+    print("All hashes match!")
+
+def score():
+    """ 
+    Iterate the augmented dataset to compute the loss. 
+    Display loss as a proportion.
+    """
+    ds = load_from_disk(AUGMENTED_DATASET_DIR)
+    print("Read ", len(ds), " records from " + AUGMENTED_DATASET_DIR)
+    print("First record: " , ds[0])
+    
+    # Iterate the dataset to compute loss
+    loss = 0
+    n = len(ds)
+    for i in range(n):
+        # correct is the value of "topic" in the input dataset
+        correct = ds[i]["topic"]
+        # predicted is from the model
+        predicted = yahoo_index_from_text(ds[i]["labels"][0])
+        if not correct == predicted:
+            loss += 1
+    print ("\nLoss: (number incorrect / number of records)", loss / n)
+
+# Demo
+fix_seed()
+classify_pipe_directly("test", 100)
+check_hashes()
+score()
