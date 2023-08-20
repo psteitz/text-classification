@@ -1,3 +1,12 @@
+# Local mods to github template
+#
+# Datasets
+hf_yahoo_data_augmented/
+# Models
+hf_supervised_model/
+
+# End local mods
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
