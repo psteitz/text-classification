@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+"""
+train.py: trains huggingface distilbert-base-uncaset model to classify texts in hf yahoo_answers_topics dataset
+"""
+
 import numpy as np
 import evaluate
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer, AutoTokenizer, pipeline

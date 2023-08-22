@@ -149,7 +149,8 @@ def fill_text(rec):
 def augment_huggingface_dataset(split : str) -> Dataset:
     """
     Load the designated split of the huggingface yahoo_answers_topics dataset and augment it with a new column named "text",
-    combining the three text columns in the source dataset into one. Then drop the three source text columns.
+    combining the three text columns in the source dataset into one. Then drop the three source text columns. Return the
+    augmented dataset.
 
     Arguments:
         split - the split of the dataset to load
