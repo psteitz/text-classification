@@ -2,6 +2,7 @@
 #
 # Datasets
 hf_yahoo_data_augmented/
+yahoo_answers_topics_augmented/
 # Models
 hf_supervised_model/
 
