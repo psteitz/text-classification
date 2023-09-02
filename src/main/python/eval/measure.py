@@ -82,6 +82,9 @@ def metrics(confusion: list) -> Dict:
     metrics["macro_f1"] = 0
     correct = 0
     total = 0
+    precision_sum = 0
+    recall_sum = 0
+    f1_sum = 0
     for i in range(num_topics):
         true_positives = len(confusion[i][i])
         correct += true_positives
@@ -92,10 +95,19 @@ def metrics(confusion: list) -> Dict:
             if i != j:
                 false_positives += len(confusion[i][j])  
                 false_negatives += len(confusion[j][i])
-        metrics["precision"].append(true_positives / (true_positives + false_positives))
-        metrics["recall"].append(true_positives / (true_positives + false_negatives))
-        metrics["f1"].append(2 * true_positives / (2 * true_positives + false_positives + false_negatives))
+        precision = true_positives / (true_positives + false_positives)
+        precision_sum += precision
+        recall = true_positives / (true_positives + false_negatives)
+        recall_sum += recall
+        f1 = 2 * true_positives / (2 * true_positives + false_positives + false_negatives)
+        f1_sum += f1
+        metrics["precision"].append(precision)
+        metrics["recall"].append(recall)
+        metrics["f1"].append(f1)
     metrics["accuracy"] = correct / total
+    metrics["macro_precision"] = precision_sum / metrics["num_topics"]
+    metrics["macro_recall"] = recall_sum / metrics["num_topics"]
+    metrics["macro_f1"] = f1_sum / metrics["num_topics"]
     return metrics
 
 def show_metrics(metrics: Dict):
@@ -105,7 +117,7 @@ def show_metrics(metrics: Dict):
     print("Number of topics: ", metrics["num_topics"])
     # Loop over topics, displaying topic labels and metrics
     for i in range(metrics["num_topics"]):
-        print(TOPIC_LABELS[i])
+        print(i, TOPIC_LABELS[i])
         print("\tPrecision: ", metrics["precision"][i])
         print("\tRecall: ", metrics["recall"][i])
         print("\tF1: ", metrics["f1"][i])
