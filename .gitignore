@@ -6,7 +6,8 @@ yahoo_answers_topics_augmented/
 data/
 # Models
 hf_supervised_model/
-
+# vscode
+.vscode/
 # End local mods
 
 # Byte-compiled / optimized / DLL files
