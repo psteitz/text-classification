@@ -189,10 +189,10 @@ def add_prediction_error(prediction, label, example, prediction_errors):
       example:  the example to add to the prediction error's examples list
       prediction_errors: the list of prediction errors
     """
-    # If there is not already a prediction error with the given prediction and label, create one, initializing its examples list with the given example
+    # If there is not already a prediction error with the given prediction and label, create one
     if not prediction_error_exists(prediction, label, prediction_errors):
         prediction_errors.append({"predicted_label": prediction, "correct_label": label, "examples": [example], "count": 1})
-    # Otherwise update the existing prediction error's examples list with the given example and increment its count
+    # Otherwise update the existing 
     else:
         for prediction_error in prediction_errors:
             if prediction_error["predicted_label"] == prediction and prediction_error["correct_label"] == label:
@@ -241,7 +241,7 @@ def score() -> dict:
             response_counts.append({"response": response, "count": 1})
         correct = ds[i]["topic"]
         predicted = ds[i]["prediction"]
-        if not correct == predicted:
+        if not correct == predicted and not predicted == -1:
             error_count += 1
             add_prediction_error(predicted, correct, ds[i]["text"], prediction_errors)
         if predicted == -1:

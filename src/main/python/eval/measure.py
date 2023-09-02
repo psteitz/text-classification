@@ -19,11 +19,10 @@ def confusion(data_dir: str) -> list:
     """ 
     Load database from disk and iterate to create augmented confusion matrix.
 
-    Returns augmented confusion matrix - a 2-d array of lists of ints
+    Returns augmented confusion matrix - a 2d array of lists of record ids from the dataset.
     Rows are predicted labels, columns are correct labels, values are lists of ids in the dataset
-    having the corresponding predicted and correct labels. 
-
-    A standard confusion matrix can be derived by replacing the lists with their lengths.
+    having the corresponding predicted and correct labels. So this is a standard confusion matrix
+    whose entries have been exploded into full lists of examples from the data (repreesented by their ids)
 
     Note: setup assumes that the labels are integers in the range 0 to n-1, where n is the number of labels.
     """
@@ -85,6 +84,7 @@ def metrics(confusion: list) -> Dict:
     total = 0
     for i in range(num_topics):
         true_positives = len(confusion[i][i])
+        correct += true_positives
         false_positives = 0
         false_negatives = 0
         for j in range(num_topics):
@@ -92,8 +92,6 @@ def metrics(confusion: list) -> Dict:
             if i != j:
                 false_positives += len(confusion[i][j])  
                 false_negatives += len(confusion[j][i])
-            else:
-                correct += len(confusion[i][j])
         metrics["precision"].append(true_positives / (true_positives + false_positives))
         metrics["recall"].append(true_positives / (true_positives + false_negatives))
         metrics["f1"].append(2 * true_positives / (2 * true_positives + false_positives + false_negatives))
