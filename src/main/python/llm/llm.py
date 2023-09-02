@@ -13,7 +13,6 @@ import time
 from datasets import load_dataset, Dataset, load_from_disk
 import replicate
 
-
 yahoo_classes = [
            "society or culture",
            "science or mathematics",
@@ -167,107 +166,7 @@ def make_predictions(dataset: Dataset, max_records : int = -1):
     print("Final save of augmented dataset to disk.")
     dataset.save_to_disk(AUGMENTED_DATASET_DIR)
     print("Last record: ", dataset[len(dataset) - 1])
-
-def prediction_error_exists(prediction, label, prediction_errors) -> bool:
-    """
-    Return True if prediction_errors includes a record with the given prediction and label.
-    """
-    for prediction_error in prediction_errors:
-        if prediction_error["predicted_label"] == prediction and prediction_error["correct_label"] == label:
-            return True
-    return False
-
-def add_prediction_error(prediction, label, example, prediction_errors):
-    """
-    If there is not already a prediction error with the given prediction and label, create one,
-    initializing its examples list with the given example; otherwise update the existing prediction
-    error's examples list with the given example.
-
-    Arguments:
-      prediction: the predicted label
-      label: the correct label
-      example:  the example to add to the prediction error's examples list
-      prediction_errors: the list of prediction errors
-    """
-    # If there is not already a prediction error with the given prediction and label, create one
-    if not prediction_error_exists(prediction, label, prediction_errors):
-        prediction_errors.append({"predicted_label": prediction, "correct_label": label, "examples": [example], "count": 1})
-    # Otherwise update the existing 
-    else:
-        for prediction_error in prediction_errors:
-            if prediction_error["predicted_label"] == prediction and prediction_error["correct_label"] == label:
-                if prediction_error["count"] < MAX_ERROR_EXAMPLES:
-                    prediction_error["examples"].append(example)
-                prediction_error["count"] += 1
-                break
-
-def score() -> dict:
-    """ 
-    Load augmented database from disk and iterate to compute the loss. 
-    Display loss as a proportion.
-
-    Returns dict with the following keys:
-        n - number of rows in the dataset
-        error_count - number of errors
-        errors - list of dicts like 
-          {"predicted_label": 1, "correct_label": 2, "count": 3, "examples": ["text1", "text2", "text3"]}
-        responses - list dicts like
-            {"response": "health", "count": 100}
-        bad_predictions - number of predictions that were -1
-    """
-    # Prediction errors - array of dicts like 
-    #   {"predicted_label": 1, "correct_label": 2, "count": 3, "examples": ["text1", "text2", "text3"]}
-    # Counts are incident counts for the given predicted/correct label pair, examples is a rolling list of examples.
-    prediction_errors = []
-    response_counts = []
-
-    ds = load_from_disk(AUGMENTED_DATASET_DIR)
-    print("Read ", len(ds), " records from " + AUGMENTED_DATASET_DIR)
-    print("First record: " , ds[0])
-    
-    # Iterate the dataset to compute error rate, fill prediction_errors and accumulate response counts
-    error_count = 0
-    bad_predictions = 0
-    n = len(ds)
-    for i in range(n):
-        response = ds[i]["response"]
-        found = False
-        for response_count in response_counts:
-            if response_count["response"] == response:
-                response_count["count"] += 1
-                found = True
-                break
-        if not found:
-            response_counts.append({"response": response, "count": 1})
-        correct = ds[i]["topic"]
-        predicted = ds[i]["prediction"]
-        if not correct == predicted and not predicted == -1:
-            error_count += 1
-            add_prediction_error(predicted, correct, ds[i]["text"], prediction_errors)
-        if predicted == -1:
-            bad_predictions += 1
-    return {"n": n, "error_count": error_count, "errors": prediction_errors, "responses": response_counts, "bad_predictions": bad_predictions}
-
-# Demo
-
+ 
 make_predictions(prepare_dataset(), 1000)
-
-results = score()
-print("n: ", results["n"])
-print("n incorrect: ", results["error_count"])
-print("error rate: ", results["error_count"] / results["n"])
-print("bad predictions: ", results["bad_predictions"])
-print("Responses:", results["responses"])
-sorted_errs = sorted(results["errors"], key=lambda x: x['count'], reverse=True)
-print(len(sorted_errs), " distinct errors")
-print("Top 10 errors:")
-for i in range(0, 10):
-    if i >= len(sorted_errs):
-        break
-    print("Error: ", "predicted:",yahoo_classes[sorted_errs[i]["predicted_label"]], " correct:",
-           yahoo_classes[sorted_errs[i]["correct_label"]], " ", sorted_errs[i]["count"])
-    for example in sorted_errs[i]["examples"]:
-        print(example)
-        print()
 
  
