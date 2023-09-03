@@ -27,31 +27,31 @@ def confusion(data_dir: str) -> list:
     Note: setup assumes that the labels are integers in the range 0 to n-1, where n is the number of labels.
     """
     confusion = []
-    ds = load_from_disk(data_dir)
-    print("Read ", len(ds), " records from " + data_dir)
-    print("First record: " , ds[0])
+    dataset = load_from_disk(data_dir)
+    print("Read ", len(dataset), " records from " + data_dir)
+    print("First record: " , dataset[0])
 
     # Get list of topics that occur in topic column
-    topics = ds.unique("topic")
+    # This should be 0 to n-1, where n is the number of topics
+    topics = dataset.unique("topic")
     topics.sort()
-    print("Topics: ", topics)
 
     # initialize the augmented confusion matrix to be a square matrix of empty lists
-    for i in range(len(topics)):
+    for row in range(len(topics)):
         confusion.append([])
         for j in range(len(topics)):
-            confusion[i].append([])
+            confusion[row].append([])
     
     # Iterate the dataset to fill the augmented confusion matrix
-    n = len(ds)
+    num_rows = len(dataset)
     bad_predictions = 0
-    for i in range(n):
-        prediction = ds[i]["prediction"]
-        correct = ds[i]["topic"]
+    for row in range(num_rows):
+        prediction = dataset[row]["prediction"]
+        correct = dataset[row]["topic"]
         if prediction == -1:
             bad_predictions += 1
         else:
-            confusion[prediction][correct].append(ds[i]["id"])
+            confusion[prediction][correct].append(dataset[row]["id"])
     return confusion
 
 def metrics(confusion: list) -> Dict:
@@ -69,6 +69,16 @@ def metrics(confusion: list) -> Dict:
         macro_recall - average recall
         macro_f1 - average f1
         accuracy - overall prediction accuracy
+    
+    Arguments:
+        confusion - augmented confusion matrix
+        Augmented means the elements are full lists of record ids instead of counts. 
+        Rows are predicted labels, columns are correct labels, values are lists of ids in the dataset that have
+        the corresponding predicted and correct labels. 
+    
+    Returns:
+        metrics - metrics dictionary
+
     
     """
     metrics = {}
@@ -129,11 +139,14 @@ def show_metrics(metrics: Dict):
     
 # Demo 
 # Load dataset including predictions and topics.  Create augmented confusion matrix from the dataset.
-confusion = confusion("../llm/yahoo_answers_topics_augmented")
+confusion = confusion("../supervised/hf_yahoo_data_augmented")
+#confusion = confusion("../mnli/hf_yahoo_data_augmented")
+#confusion = confusion("../llm/yahoo_answers_topics_augmented")
 # Put into a dataframe, replacing lists with counts.  This makes a standard confusion matrix.
 frame = pd.DataFrame(confusion)
 for i in range(len(frame)):
     frame[i] = frame[i].map(lambda x: len(x))
+print("Confusion matrix: rows are predicted labels, columns are correct labels")
 print(frame)
 # Calculate and display metrics from the augmented confusion matrix
-print(show_metrics(metrics(confusion)))
+show_metrics(metrics(confusion))
