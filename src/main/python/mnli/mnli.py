@@ -212,7 +212,7 @@ def classify_iterate_hf_dataset(split: str, num_records : int):
 def classify_pipe_directly(split: str, num_records : int = -1):
     """
     Pipes the designated split of huggingface yahoo_answers_topics dataset directly
-    through the zero-shot-classification model.
+    through the zero-shot-classification model. Saves augmented dataset inluding predictions to disk.
 
     1. Load the huggingface yahoo_answers_topics dataset.
     2. Augment it with a new column named "text", combining the three text columns in the source dataset into one
@@ -243,8 +243,10 @@ def classify_pipe_directly(split: str, num_records : int = -1):
     print("Running through pipline...")
 
     # Create new columns for model output
-    labels_column = []
-    scores_column = []
+    labels_column = [] # list of lists of labels, ordred by probability
+    scores_column = [] # list of lists of scores, ordred by probability
+    predictions_column = [] # list of predicted labels (index of the first label in labels_column)
+
     # Add a column to track hash of text
     sequence_track_column = []
 
@@ -254,6 +256,7 @@ def classify_pipe_directly(split: str, num_records : int = -1):
         sequence_track_column.append(hash(out["sequence"]))
         scores_column.append(out["scores"])
         labels_column.append(out["labels"])
+        predictions_column.append(yahoo_index_from_text(out["labels"][0]))
         if ct % 1000 == 0:
             print(str(ct) + "  " + datetime.now().strftime("%H:%M:%S"))
         ct += 1
@@ -261,15 +264,16 @@ def classify_pipe_directly(split: str, num_records : int = -1):
     # Add columns to dataset
     print ("Adding columns to dataset...")
     print()
-    dataset = dataset.add_column("labels", labels_column)
-    dataset = dataset.add_column("scores", scores_column)
-    dataset = dataset.add_column("sequence_track", sequence_track_column)
+    dataset = dataset.add_column("labels", labels_column)\
+        .add_column("scores", scores_column)\
+        .add_column("sequence_track", sequence_track_column)\
+        .add_column("prediction", predictions_column);
 
     # Display the first record  of the dataset
     print(dataset[0])
 
-    print("Saving augmented dataset to disk...")
     # Save the augmented dataset to disk
+    print("Saving augmented dataset to disk...")
     Path(AUGMENTED_DATASET_DIR).mkdir(parents=True, exist_ok=True)
     dataset.save_to_disk(AUGMENTED_DATASET_DIR)
     print("\nclassify_pipe_directly end time: " + datetime.now().strftime("%H:%M:%S"))
@@ -301,29 +305,7 @@ def check_hashes():
             return
     print("All hashes match!")
 
-def score():
-    """ 
-    Iterate the augmented dataset to compute the loss. 
-    Display loss as a proportion.
-    """
-    ds = load_from_disk(AUGMENTED_DATASET_DIR)
-    print("Read ", len(ds), " records from " + AUGMENTED_DATASET_DIR)
-    print("First record: " , ds[0])
-    
-    # Iterate the dataset to compute loss
-    loss = 0
-    n = len(ds)
-    for i in range(n):
-        # correct is the value of "topic" in the input dataset
-        correct = ds[i]["topic"]
-        # predicted is from the model
-        predicted = yahoo_index_from_text(ds[i]["labels"][0])
-        if not correct == predicted:
-            loss += 1
-    print ("\nLoss: (number incorrect / number of records)", loss / n)
-
 # Demo
-fix_seed()
-classify_pipe_directly("test", 100)
+#fix_seed()
+classify_pipe_directly("test")
 check_hashes()
-score()

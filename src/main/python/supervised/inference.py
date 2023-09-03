@@ -30,12 +30,14 @@ def fill_text(rec):
     rec["sequence"] = rec["question_title"] + " " + rec["question_content"] + " " + rec["best_answer"]
     return rec
 
-yahoo_answers_topics_augmented = yahoo_anwwers_topics.map(fill_text).remove_columns(["question_title", "question_content", "best_answer"])
+yahoo_answers_topics_augmented = yahoo_anwwers_topics.map(fill_text)\
+    .remove_columns(["question_title", "question_content", "best_answer"])
 
 def classify_pipe_directly(split: str, num_records : int = -1):
     """
     Pipes the designated split of huggingface yahoo_answers_topics dataset directly
-    through the supervised text classification model.
+    through the supervised text classification model.  Augments the dataset with predictions and saves the augmented
+    dataset to disk.
 
     1. Load the huggingface yahoo_answers_topics dataset.
     2. Augment it with a new column named "text", combining the three text columns in the source dataset into one
@@ -56,12 +58,12 @@ def classify_pipe_directly(split: str, num_records : int = -1):
     # Load the model
     classifier = pipeline("text-classification", model="./hf_supervised_model", truncation=True, max_length=512, device=0)
     print("Loading and augmenting dataset...")
-    ds = yahoo_answers_topics_augmented[split]
+    dataset = yahoo_answers_topics_augmented[split]
     if num_records < 0:
-        dataset = ds
+        dataset = dataset
     else:
-        indices = random.sample(range(0, len(ds)), num_records)
-        dataset = ds.select(indices);
+        indices = random.sample(range(0, len(dataset)), num_records)
+        dataset = dataset.select(indices);
     print("Read ", len(dataset), " records from huggingface yahoo_answers_topics " + split + " split.")
     print("First record: ", dataset[0])
     print("Running through pipline...")
@@ -69,12 +71,16 @@ def classify_pipe_directly(split: str, num_records : int = -1):
     # Create new columns for model output
     labels_column = []
     scores_column = []
+    predictions_column = []
 
     # Run the model on the dataset and fill new columns from model output
+    # Model output is a dictionary with keys "score" and "label" where "label"
+    # is the predicted class label and "score" is the softmax score for the prediction.
     ct = 0
     for out in classifier(KeyDataset(dataset, "sequence")):
         scores_column.append(out["score"])
         labels_column.append(out["label"])
+        predictions_column.append(yahoo_index_from_text(out["label"]))
         if ct % 1000 == 0:
             print(str(ct) + "  " + datetime.now().strftime("%H:%M:%S"))
         ct += 1
@@ -82,8 +88,9 @@ def classify_pipe_directly(split: str, num_records : int = -1):
     # Add columns to dataset
     print ("Adding columns to dataset...")
     print()
-    dataset = dataset.add_column("label", labels_column)
-    dataset = dataset.add_column("score", scores_column)
+    dataset = dataset.add_column("label", labels_column)\
+        .add_column("score", scores_column).\
+            add_column("prediction", predictions_column)
 
     # Display the first record  of the dataset
     print(dataset[0])
@@ -104,28 +111,6 @@ def yahoo_index_from_text(class_label: str) -> int:
     print("Error: yahoo class not found: " + class_label)
     return -1
 
-def score():
-    """ 
-    Iterate the augmented dataset to compute the loss. 
-    Display loss as a proportion.
-    """
-    ds = load_from_disk(AUGMENTED_DATASET_DIR)
-    print("Read ", len(ds), " records from " + AUGMENTED_DATASET_DIR)
-    print("First record: " , ds[0])
-    
-    # Iterate the dataset to compute loss
-    loss = 0
-    n = len(ds)
-    for i in range(n):
-        # correct is the value of "topic" in the input dataset
-        correct = ds[i]["topic"]
-        # predicted is from the model
-        predicted = yahoo_index_from_text(ds[i]["label"])
-        if not correct == predicted:
-            loss += 1
-    print ("\nLoss: (number incorrect / number of records)", loss / n)
-
 # Demo
 classify_pipe_directly("test")
-score()
 
