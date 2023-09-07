@@ -8,8 +8,8 @@ from datasets import load_dataset, load_from_disk
 from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
 from transformers.pipelines.pt_utils import KeyDataset
 
-AUGMENTED_DATASET_DIR = "./hf_yahoo_data_augmented"
-FULLY_AUGMENTED_DATASET_DIR = "./hf_yahoo_data_fully_augmented"
+AUGMENTED_DATASET_DIR = "./data//hf_yahoo_data_augmented"
+FULLY_AUGMENTED_DATASET_DIR = "./data/hf_yahoo_data_fully_augmented"
 
 # yahoo questions categories
 yahoo_classes = [
