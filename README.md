@@ -2,7 +2,7 @@
 This repo contains examples of three different ways to do text classification. The examples use open source data. Repeating these experiments with other datasets would be helpful. PRs reporting results ideally including datasets are most welcome,
 
 ## Supervised transformer-based
-Start with a pre-trained transformer model, add layer to classify embeddings of input texts anf fine-tune with labelled data.
+Start with a pre-trained transformer model, add a layer to classify embeddings of input texts anf fine-tune with labelled data.
 See [HuggingFace tutorial](https://huggingface.co/docs/transformers/tasks/sequence_classification).
 * Usually most accurate 
 * Always the fastest
