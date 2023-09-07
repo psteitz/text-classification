@@ -136,12 +136,24 @@ def show_metrics(metrics: Dict):
     print("Macro recall: ", metrics["macro_recall"])
     print("Macro F1: ", metrics["macro_f1"])
     print("Accuracy: ", metrics["accuracy"])
+
+def examples(predicted : int, correct : int, num_examples : int, confusion : list) -> List:
+    """ 
+    Return a list of num_examples examples from the dataset that have the given predicted and correct labels.
+    """
+    examples = []
+    for id in confusion[predicted][correct]:
+        examples.append(dataset[id])
+        if len(examples) >= num_examples:
+            break
+    return examples
+
     
 # Demo 
 # Load dataset including predictions and topics.  Create augmented confusion matrix from the dataset.
-confusion = confusion("../supervised/hf_yahoo_data_augmented")
+#confusion = confusion("../supervised/data/hf_yahoo_data_augmented")
 #confusion = confusion("../mnli/hf_yahoo_data_augmented")
-#confusion = confusion("../llm/yahoo_answers_topics_augmented")
+confusion = confusion("../llm/data/yahoo_answers_topics_augmented_zero_shot")
 # Put into a dataframe, replacing lists with counts.  This makes a standard confusion matrix.
 frame = pd.DataFrame(confusion)
 for i in range(len(frame)):
