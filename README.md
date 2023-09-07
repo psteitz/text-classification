@@ -53,5 +53,5 @@ Alternatives:
 
 ## Few shot, LLM
 This method provides instructions to a chat-trained LLM to classify input texts.  We implement two ways to do this:
-1 Zero-shot - system prompt provides instructions including labels and prompt provides the text to be classified
-1 Few-shot - prompt provides "canonical" examples of classifications and then asks the LLM to classify the input similarly
+1. Zero-shot - system prompt provides instructions including labels and prompt provides the text to be classified
+2. Few-shot - prompt provides "canonical" examples of classifications and then asks the LLM to classify the input similarly
