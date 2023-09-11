@@ -1,5 +1,5 @@
 from ast import Dict, List
-from datasets import load_from_disk
+from datasets import load_from_disk, Dataset
 import pandas as pd
 
 
@@ -17,14 +17,21 @@ TOPIC_LABELS = ["society or culture",
 
 def confusion(data_dir: str) -> list:
     """ 
-    Load database from disk and iterate to create augmented confusion matrix.
+    Load database from disk and create augmented confusion matrix.
 
-    Returns augmented confusion matrix - a 2d array of lists of record ids from the dataset.
+    The augmented confusion matrix is a 2d array whose elements are lists of record ids from the dataset.
     Rows are predicted labels, columns are correct labels, values are lists of ids in the dataset
     having the corresponding predicted and correct labels. So this is a standard confusion matrix
-    whose entries have been exploded into full lists of examples from the data (repreesented by their ids)
+    whose entries have been exploded into full lists of examples from the data (repreesented by their ids).
+    For example, if the confusion matrix has [12, 93, 2005] in row 3, column 5, then the records with ids
+    12, 93, and 2005 in the dataset have predicted label 3 and correct label 5.
 
     Note: setup assumes that the labels are integers in the range 0 to n-1, where n is the number of labels.
+
+    Arguments:
+        data_dir - directory containing the dataset
+    Returns:
+        confusion - augmented confusion matrix as a list of lists of lists of record ids
     """
     confusion = []
     dataset = load_from_disk(data_dir)
@@ -77,9 +84,7 @@ def metrics(confusion: list) -> Dict:
         the corresponding predicted and correct labels. 
     
     Returns:
-        metrics - metrics dictionary
-
-    
+        metrics - metrics dictionary 
     """
     metrics = {}
     num_topics = len(confusion)
@@ -137,9 +142,16 @@ def show_metrics(metrics: Dict):
     print("Macro F1: ", metrics["macro_f1"])
     print("Accuracy: ", metrics["accuracy"])
 
-def examples(predicted : int, correct : int, num_examples : int, confusion : list) -> List:
+def examples(dataset: Dataset, predicted : int, correct : int, num_examples : int, confusion : list) -> List:
     """ 
-    Return a list of num_examples examples from the dataset that have the given predicted and correct labels.
+    Return a list of ids of records in the dataset that have the given predicted and correct labels.
+    Note: the dataset must have id, prediction, and topic columns defined. 
+
+    Arguments:
+        dataset - dataset from which to select examples
+        predicted - predicted label
+        correct - correct label
+        num_examples - maximum number of examples to return (may be less if there are fewer than num_examples examples)
     """
     examples = []
     for id in confusion[predicted][correct]:
@@ -147,18 +159,57 @@ def examples(predicted : int, correct : int, num_examples : int, confusion : lis
         if len(examples) >= num_examples:
             break
     return examples
-
     
+def mistakes(num_mistakes : int = -1) -> List:
+    """ 
+    Return list of mistake triples: (predicted, correct, frequency) in descending order of frequency.
+    The frequency is the number of times the mistake was made in the dataset
+    (the value of <predicted, correct> entry in the confusion matrix).
+    
+    Arguments:
+        num_mistakes - maximum number of entries to return 
+    Returns:
+        list of (predicted, correct, frequency) tuples in descending order of frequency 
+    """
+    # Load the confusion matrix and create the retun list   
+    augmented_confusion = confusion("../llm/data/yahoo_answers_topics_augmented_zero_shot")
+    mistakes = []
+    num_added = 0
+    # Iterate over the confusion matrix, adding each off-diagonal entry to the return list
+    for i in range(len(augmented_confusion)):
+        for j in range(len(augmented_confusion)):
+            if i != j:
+                mistakes.append((i, j, len(augmented_confusion[i][j])))
+                num_added += 1
+    # Sort the return list by frequency
+    mistakes.sort(key=lambda x: x[2], reverse=True)
+    if num_mistakes == -1:
+        return mistakes
+    return mistakes[:num_mistakes]
+
+def show_mistakes(num_mistakes : int = -1):
+    """ 
+    Display the most frequent mistakes in the dataset.
+    
+    Arguments:
+        num_mistakes - maximum number of entries to display 
+    """
+    top_mistakes = mistakes(num_mistakes)
+    for mistake in top_mistakes:
+        predicted, correct, frequency = mistake
+        print("Predicted:",TOPIC_LABELS[predicted], "Correct", TOPIC_LABELS[correct], "count", frequency)
+
 # Demo 
 # Load dataset including predictions and topics.  Create augmented confusion matrix from the dataset.
 #confusion = confusion("../supervised/data/hf_yahoo_data_augmented")
 #confusion = confusion("../mnli/hf_yahoo_data_augmented")
-confusion = confusion("../llm/data/yahoo_answers_topics_augmented_zero_shot")
+confusion_matrix = confusion("../llm/data/yahoo_answers_topics_augmented_zero_shot")
 # Put into a dataframe, replacing lists with counts.  This makes a standard confusion matrix.
-frame = pd.DataFrame(confusion)
+frame = pd.DataFrame(confusion_matrix)
 for i in range(len(frame)):
     frame[i] = frame[i].map(lambda x: len(x))
 print("Confusion matrix: rows are predicted labels, columns are correct labels")
 print(frame)
 # Calculate and display metrics from the augmented confusion matrix
-show_metrics(metrics(confusion))
+show_metrics(metrics(confusion_matrix))
+show_mistakes(10)
