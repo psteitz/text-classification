@@ -2,7 +2,7 @@
 This repo contains examples of three different ways to do text classification. The examples use open source data. Repeating these experiments with other datasets would be helpful. PRs reporting results ideally including datasets are most welcome,
 
 ## Supervised transformer-based
-Start with a pre-trained transformer model, add layer to classify embeddings of input texts anf fine-tune with labelled data.
+Start with a pre-trained transformer model, add a layer to classify embeddings of input texts anf fine-tune with labelled data.
 See [HuggingFace tutorial](https://huggingface.co/docs/transformers/tasks/sequence_classification).
 * Usually most accurate 
 * Always the fastest
@@ -52,3 +52,6 @@ Alternatives:
 
 
 ## Few shot, LLM
+This method provides instructions to a chat-trained LLM to classify input texts.  We implement two ways to do this:
+1. Zero-shot - system prompt provides instructions including labels and prompt provides the text to be classified
+2. Few-shot - prompt provides "canonical" examples of classifications and then asks the LLM to classify the input similarly
