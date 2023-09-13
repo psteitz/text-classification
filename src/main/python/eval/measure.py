@@ -1,4 +1,5 @@
 from ast import Dict, List
+import random
 from datasets import load_from_disk, Dataset
 import pandas as pd
 
@@ -160,26 +161,25 @@ def examples(dataset: Dataset, predicted : int, correct : int, num_examples : in
             break
     return examples
     
-def mistakes(num_mistakes : int = -1) -> List:
+def mistakes(confusion : List, num_mistakes : int = -1) -> List:
     """ 
     Return list of mistake triples: (predicted, correct, frequency) in descending order of frequency.
     The frequency is the number of times the mistake was made in the dataset
     (the value of <predicted, correct> entry in the confusion matrix).
     
     Arguments:
+        confusion - augmented confusion matrix
         num_mistakes - maximum number of entries to return 
     Returns:
         list of (predicted, correct, frequency) tuples in descending order of frequency 
     """
-    # Load the confusion matrix and create the retun list   
-    augmented_confusion = confusion("../llm/data/yahoo_answers_topics_augmented_zero_shot")
     mistakes = []
     num_added = 0
     # Iterate over the confusion matrix, adding each off-diagonal entry to the return list
-    for i in range(len(augmented_confusion)):
-        for j in range(len(augmented_confusion)):
+    for i in range(len(confusion)):
+        for j in range(len(confusion)):
             if i != j:
-                mistakes.append((i, j, len(augmented_confusion[i][j])))
+                mistakes.append((i, j, len(confusion[i][j])))
                 num_added += 1
     # Sort the return list by frequency
     mistakes.sort(key=lambda x: x[2], reverse=True)
@@ -187,23 +187,43 @@ def mistakes(num_mistakes : int = -1) -> List:
         return mistakes
     return mistakes[:num_mistakes]
 
-def show_mistakes(num_mistakes : int = -1):
+def show_mistakes(dataset : Dataset, confusion: List, num_mistakes : int = -1, num_examples : int = 3):
     """ 
-    Display the most frequent mistakes in the dataset.
+    Display the most frequent mistakes in the dataset, along with examples of each mistake.
     
     Arguments:
-        num_mistakes - maximum number of entries to display 
+        dataset - dataset to search for examples
+        confusion - augmented confusion matrix
+        num_mistakes - maximum number of mistake entries to display (default is all)
+        num_examples - maximum number of examples to display for each mistake (default is 3)
     """
-    top_mistakes = mistakes(num_mistakes)
+    top_mistakes = mistakes(confusion, num_mistakes)
     for mistake in top_mistakes:
         predicted, correct, frequency = mistake
         print("Predicted:",TOPIC_LABELS[predicted], "Correct", TOPIC_LABELS[correct], "count", frequency)
+        example_ids = confusion[predicted][correct]
+        if len(example_ids) > num_examples:
+            # take a random sample of num_examples examples from example_ids
+            example_ids = random.sample(example_ids, num_examples)
+            num_examples = len(example_ids)
+        
+        for i in range(num_examples):
+            # print("\t", example_ids[i])
+            # find the example in the dataset and print the value of its sequence column
+            for j in range(len(dataset)):
+                if dataset[j]['id'] == example_ids[i]:
+                     break
+            print(dataset[j]['text'],'\n')
+
+
+
 
 # Demo 
 # Load dataset including predictions and topics.  Create augmented confusion matrix from the dataset.
 #confusion = confusion("../supervised/data/hf_yahoo_data_augmented")
 #confusion = confusion("../mnli/hf_yahoo_data_augmented")
-confusion_matrix = confusion("../llm/data/yahoo_answers_topics_augmented_zero_shot")
+data_dir = "../llm/data/yahoo_answers_topics_augmented_zero_shot"
+confusion_matrix = confusion(data_dir)
 # Put into a dataframe, replacing lists with counts.  This makes a standard confusion matrix.
 frame = pd.DataFrame(confusion_matrix)
 for i in range(len(frame)):
@@ -212,4 +232,4 @@ print("Confusion matrix: rows are predicted labels, columns are correct labels")
 print(frame)
 # Calculate and display metrics from the augmented confusion matrix
 show_metrics(metrics(confusion_matrix))
-show_mistakes(10)
+show_mistakes(load_from_disk(data_dir),confusion_matrix, 10)
