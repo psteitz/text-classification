@@ -115,30 +115,6 @@ def raw_nli(premise, hypothesis) -> List(float):
                         truncation=True)
     return nli_model(x.to(device))[0].data.tolist()[0]
 
-
-# Read in huggingface yahoo_answers_topics dataset and return a list of dicts
-def load_huggingface_dataset_to_list(split : str) -> List(dict):
-    """
-    Load the designated split of the huggingface yahoo_answers_topics dataset and return a list of dicts
-    with these keys:
-        classification  int label index into yahoo_classes
-        text  text sequence to be classified
-    """
-    training_dataset = load_dataset('yahoo_answers_topics', split=split)
-    output = []
-    for i in range(len(training_dataset)):
-        hf_record = training_dataset[i]
-        """
-        HF yahoo_answers_topics database fields:
-           topic (int)	
-           question_title (string)	
-           question_content (string)
-           best_answer (string)
-        """
-        text = hf_record["question_title"] + " " + hf_record["question_content"] + " " + hf_record["best_answer"]
-        output.append({"classification": training_dataset[i]["topic"], "text": text})
-    return output
-
 def fill_text(rec):
     """
     Fill in the "text" field of the given record with the concatenation of the three text fields in the record.
@@ -187,27 +163,6 @@ def simple_raw_nli():
     x = tokenizer.encode(sequence, hypothesis, return_tensors='pt',
                             truncation=True)
     print(nli_model(x.to(device)))
-
-def classify_iterate_hf_dataset(split: str, num_records : int):
-    """
-    Read the first num_records records from huggingface yahoo_answers_topics dataset
-    into a list of dicts and then iterate over it, classifying records by feeding them
-    to the classifier one at a time.
-
-    Arguments:
-        num_records - number of records to read from the dataset and classify
-        split - the split of the dataset to load
-    """
-    print("Read huggingface dataset into list of dicts and start manually iterating and classfiying...")
-    records = load_huggingface_dataset_to_list(split).select(range(num_records));
-    indices = random.sample(range(0, len(records)), num_records)
-    records = records.select(indices)
-    print("Read ", len(records), " records from huggingface yahoo_answers_topics " + split + " split");
-    print("First record: ", records[0])
-    for i in range(num_records):
-        print(records[i]["classification"], " ", yahoo_classes[records[i]["classification"]])
-        print(records[i]["text"])
-        print(huggingface_zero_shot_classify(records[i]["text"], yahoo_classes))
 
 def classify_pipe_directly(split: str, num_records : int = -1):
     """

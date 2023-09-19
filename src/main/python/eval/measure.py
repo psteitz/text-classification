@@ -215,11 +215,9 @@ def show_mistakes(dataset : Dataset, confusion: List, num_mistakes : int = -1, n
                      break
             print(dataset[j]['text'],'\n')
 
-
-
-
 # Demo 
 # Load dataset including predictions and topics.  Create augmented confusion matrix from the dataset.
+
 #confusion = confusion("../supervised/data/hf_yahoo_data_augmented")
 #confusion = confusion("../mnli/hf_yahoo_data_augmented")
 data_dir = "../llm/data/yahoo_answers_topics_augmented_zero_shot"
