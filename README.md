@@ -49,6 +49,7 @@ have premise, hypothesis, and label keys.
 * premise is the text to classify.
 * hypothesis is a statement like "This text is about \<class\>." where \<class\> is the classification text.
 * label is 0, 1 or 2 where 0 means contradiction, 1 means neutral and 2 means entailment.
+
 Classification examples can be used as fine-tuning input data, but they need to be augmented with training records that are neutral and / or contradiction examples. Just adding entailment examples based on the labelled training data will not work for fine-tuning. The training data has to be at least a little bit balanced across the labels, i.e., training records have to include some examples of the 0 (contradiction) and 1 (neutral) inference classifications.  The recommendation in [Benchmarking Zero-shot Text Classification: Datasets, Evaluation and Entailment Approach](https://aclanthology.org/D19-1404) (Yin et al., EMNLP-IJCNLP 2019) is to add two training records for each labelled example, one 
 with the hypothesis built from the correct classification label and the other with a randomly selected alternative label and a random choice of neutral or entails.
 
