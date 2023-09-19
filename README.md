@@ -25,14 +25,14 @@ Start with a pre-trained transformer model fine-tuned for mnli tasks and transla
 ### Zero-shot mnli-trained classifier
 
 Look at entailment probabilities for 
-* __hypothesis__ "This text is about {}." and 
+* __hypothesis__ "This text is about {}." (or alternative template)
 * __premise__ text to be classified
 
 
 The mnli model gives us three probabilities for each classufication label against each of the input texts:
 * probability of entailment - the probability that the premise entails the hypothesis
 * neutral probability - the probability that the premise and hypothesis are compatible, but not related
-* probability of contradiction - the probability that the premise contradicts the hypothesis.
+* probability of contradiction - the probability that the premise contradicts the hypothesis
 
 Zero-shot, mnli-based classification only looks at the first set of probabilities, returning the classification with the highest entailment probability.
 
@@ -42,12 +42,12 @@ Because you are asking the model to semantically relate the classification with 
 ### Zero-shot mnli-trained fine-tuned
 You can also fine-tune a Zero-shot, mnli classification model.
 
-__Caution__ Once you have a bunch of labelled, corrected data it is generally best to move to a supervised model.
+__Caution__ Once you have a bunch of labelled, corrected data it is generally best to move to a supervised model. A supervised model will usually be more accurate and always be much faster with less compute requirements.
 
 Fine-tuning an mnli classifier means fine-tuning the mnli model's inference task.  Training records for this task 
 have premise, hypothesis, and label keys.
 * premise is the text to classify.
-* hypothesis is a statement like "This text is about <class>." where <class> is the classification text.
+* hypothesis is a statement like "This text is about \<class\>." where \<class\> is the classification text.
 * label is 0, 1 or 2 where 0 means contradiction, 1 means neutral and 2 means entailment
 Classification examples can be used as fine-tuning input data, but they need to be augmented with training records that are neutral and / or contradiction examples. The training data has to be at least a little bit balanced across the labels. 
 
