@@ -1,5 +1,13 @@
 # text-classification
-This repo contains examples of three different ways to do text classification. The examples use open source data. Repeating these experiments with other datasets would be helpful. PRs reporting results ideally including datasets are most welcome,
+This repo contains examples of three different ways to do text classification.
+1. Supervised, using fine-tuning a transformer model
+2. Transfer, using a pre-trained transformer nli model
+4. Few shot, using a chat-trained LLM
+
+The examples use open source modles and data. Huggingface datasets are used to manage training data and store model prediction results. Huggingface models create predictions.
+
+Repeating these experiments with other datasets would be helpful. PRs reporting results ideally including datasets are most welcome,
+
 
 ## Supervised transformer-based
 Start with a pre-trained transformer model, add a layer to classify embeddings of input texts anf fine-tune with labelled data.
