@@ -6,8 +6,6 @@ This repo contains examples of three different ways to do text classification.
 
 The examples use open source modles and data. Huggingface datasets are used to manage training data and store model prediction results. Huggingface models create predictions.
 
-Repeating these experiments with other datasets would be helpful. PRs reporting results ideally including datasets are most welcome,
-
 
 ## Supervised transformer-based
 Start with a pre-trained transformer model, add a layer to classify input texts anf fine-tune with labelled data.
