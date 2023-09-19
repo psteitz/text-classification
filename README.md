@@ -1,7 +1,7 @@
 # text-classification
 This repo contains examples of three different ways to do text classification.
 1. Supervised: fine-tuned transformer model
-2. Transfer: pre-trained transformer nli model
+2. Zero shot nli: pre-trained transformer nli model
 4. Few shot: chat-trained LLM
 
 The examples use open source modles and data. Huggingface datasets are used to manage training data and store model prediction results. Huggingface models create predictions.
