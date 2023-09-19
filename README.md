@@ -10,7 +10,7 @@ Repeating these experiments with other datasets would be helpful. PRs reporting 
 
 
 ## Supervised transformer-based
-Start with a pre-trained transformer model, add a layer to classify embeddings of input texts anf fine-tune with labelled data.
+Start with a pre-trained transformer model, add a layer to classify input texts anf fine-tune with labelled data.
 See [HuggingFace tutorial](https://huggingface.co/docs/transformers/tasks/sequence_classification).
 * Usually most accurate 
 * Always the fastest
