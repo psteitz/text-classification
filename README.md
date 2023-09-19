@@ -16,7 +16,7 @@ Start with a pre-trained transformer model fine-tuned for mnli tasks and transla
 * Slower than supervised, faster than LLM
 * Models can be small
 
-### zero-shot mnli-trained classifier
+### Zero-shot mnli-trained classifier
 Translate the classfication problem into an inference problem
 
 Look at entailment probabilities for 
@@ -33,7 +33,7 @@ Zero-shot, mnli-based classification only looks at the first set of probabilitie
 Because you are asking the model to semantically relate the classification with the text, it makes a big difference what text labels you use to express the classifications.  If your classification labels are clear and don't overlap that much, things work better.
 These models are slower than supervised classifiers, but faster than LLMs.
 
-## Zero-shot small model, inferernce-trained, fine-tuned
+### Zero-shot small model, inferernce-trained, fine-tuned
 You can also fine-tune a Zero-shot, mnli classification model.
 
 __Caution__ Once you have a bunch of labelled, corrected data it is generally best to move to a supervised model.
@@ -51,7 +51,7 @@ Alternatives:
 * Add more records for other labels based on what current model says
 
 
-## Few shot, LLM
-This method provides instructions to a chat-trained LLM to classify input texts.  We implement two ways to do this:
+## Chat-trained LLM
+Use a chat-trained LLM to classify input texts.  Two ways to do this:
 1. Zero-shot - system prompt provides instructions including labels and prompt provides the text to be classified
 2. Few-shot - prompt provides "canonical" examples of classifications and then asks the LLM to classify the input similarly
