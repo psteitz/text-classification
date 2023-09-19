@@ -28,8 +28,9 @@ Start with a pre-trained transformer model fine-tuned for mnli tasks and transla
 Translate the classfication problem into an inference problem
 
 Look at entailment probabilities for 
-* __hypothesis__ "This text is about {}" and 
+* __hypothesis__ "This text is about {}." and 
 * __premise__ text to be classified
+
 
 The mnli model gives us three probabilities for each classufication label against each of the input texts:
 * probability of entailment - the probability that the premise entails the hypothesis
@@ -38,10 +39,10 @@ The mnli model gives us three probabilities for each classufication label agains
 
 Zero-shot, mnli-based classification only looks at the first set of probabilities, returning the classification with the highest entailment probability.
 
-Because you are asking the model to semantically relate the classification with the text, it makes a big difference what text labels you use to express the classifications.  If your classification labels are clear and don't overlap that much, things work better.
-These models are slower than supervised classifiers, but faster than LLMs.
+Because you are asking the model to semantically relate the classification with the text, it makes a big difference what text labels you use to express the classifications. The hypothesis template also makes a difference. If your classification labels are clear and don't overlap that much, things work better. The default template usually works.
 
-### Zero-shot small model, inferernce-trained, fine-tuned
+
+### Zero-shot mnli-trained fine-tuned
 You can also fine-tune a Zero-shot, mnli classification model.
 
 __Caution__ Once you have a bunch of labelled, corrected data it is generally best to move to a supervised model.
@@ -49,7 +50,7 @@ __Caution__ Once you have a bunch of labelled, corrected data it is generally be
 Fine-tuning an mnli classifier means fine-tuning the mnli model's inference task.  Training records for this task 
 have premise, hypothesis, and label keys.
 * premise is the text to classify.
-* hypothesis is a statement like "This text is about <class>." where <class> is the classification text 
+* hypothesis is a statement like "This text is about <class>." where <class> is the classification text.
 * label is 0, 1 or 2 where 0 means contradiction, 1 means neutral and 2 means entailment
 Classification examples can be used as fine-tuning input data, but they need to be augmented with training records that are neutral and / or contradiction examples. The training data has to be at least a little bit balanced across the labels. 
 
