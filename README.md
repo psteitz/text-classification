@@ -4,7 +4,7 @@ This repo contains examples of three different ways to do text classification.
 2. Zero shot nli: pre-trained transformer nli model
 4. Few shot: chat-trained LLM
 
-The examples use open source modles and data. Huggingface datasets are used to manage training data and store model prediction results. Huggingface models create predictions.
+The examples use open source modles and data. Huggingface datasets are used to manage training data and store model prediction results. Huggingface models create predictions, other than the chat-trained llm, which is llama-2-70b-chat hosted on Replicate.
 
 
 ## Supervised transformer-based
