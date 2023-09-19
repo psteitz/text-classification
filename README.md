@@ -23,7 +23,6 @@ Start with a pre-trained transformer model fine-tuned for mnli tasks and transla
 * Models can be small
 
 ### Zero-shot mnli-trained classifier
-Translate the classfication problem into an inference problem
 
 Look at entailment probabilities for 
 * __hypothesis__ "This text is about {}." and 
