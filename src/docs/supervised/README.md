@@ -1,4 +1,4 @@
-#Incremental training
+# Incremental training
 
 Incremental training breaks a training set into blocks and uses a form of teacher-student training and a modified loss calculation to train a sequence of models.
 
