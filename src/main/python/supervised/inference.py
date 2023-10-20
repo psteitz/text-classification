@@ -127,7 +127,6 @@ def fill_output(rec):
     """
     Fill in the "text" field of the given record with the concatenation of the three text fields in the record.
     """
-
     rec["text"] = rec["question_title"] + " " + rec["question_content"] + " " + rec["best_answer"]
     return rec
 
