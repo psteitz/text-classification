@@ -1,6 +1,6 @@
 # Incremental training
 
-Incremental training breaks a training set into blocks and uses a form of teacher-student training and a modified loss calculation to train a sequence of models. Student models learn natural label probability distributions that result in correct classifications.  Training examples that teachers get right are used to move student models toward natural distributions.  Instead of using one-hot logits as training targets, the trainer uses the teacher's estimates in cross-entropy loss calculation, so all student model logits are taken into account in the loss function.  
+Incremental training breaks a training set into blocks and uses a form of teacher-student training and a modified loss calculation to train a sequence of models. Student models learn natural label probability distributions that result in correct classifications.  Training examples that teachers get right are used to move student models toward natural distributions.  Instead of using one-hot logits as training targets, the trainer uses the teacher's correct estimates in cross-entropy loss calculation, so all student model logits are taken into account in the loss function.  
 
 The method works as follows.
 
