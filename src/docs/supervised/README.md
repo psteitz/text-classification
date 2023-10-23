@@ -17,4 +17,4 @@ Create $T_2$ similarly, but now using $M_1$ to score $S_2$, another $n/k$ elemen
 Repeat until all of $T$ is used and return the final model.
 
 ## Implementation using HuggingFace transformers and Trainer
-For student training, we need to replace the standard cross-entrooy loss function that uses a one-hot target vector with one that can take a distribution, computed useing the teacher model.  The easiset way to do this is to subclass the [HuggingFace Trainer](https://huggingface.co/docs/transformers/v4.34.1/en/main_classes/trainer#trainer) class, overriding its [compute_loss](https://github.com/huggingface/transformers/blob/v4.34.1/src/transformers/trainer.py#L2791) function.
+For student training, we need to replace the standard cross-entrooy loss function that uses a one-hot target vector with one that can take a distribution, computed using the teacher model.  The easiset way to do this is to subclass the [HuggingFace Trainer](https://huggingface.co/docs/transformers/v4.34.1/en/main_classes/trainer#trainer) class, overriding its [compute_loss](https://github.com/huggingface/transformers/blob/v4.34.1/src/transformers/trainer.py#L2791) function.
