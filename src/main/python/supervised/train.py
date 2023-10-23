@@ -9,19 +9,24 @@ import evaluate
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer, AutoTokenizer, pipeline
 from datasets import load_dataset
 
-yahoo_anwwers_topics = load_dataset("yahoo_answers_topics")
+# Huggingace model name for distilbert base uncased
+BERT_MODEL= "distilbert-base-uncased"
 
-tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+# load HuggingFace dataset
+YAHOO_ANSWERS_TOPICS = load_dataset("yahoo_answers_topics")
+
+# use AutoTokenizer for BERT_MODEL
+TOKENIZER = AutoTokenizer.from_pretrained(BERT_MODEL)
 
 def preprocess_function(rec):
     rec["text"] = rec["question_title"] + " " + rec["question_content"] + " " + rec["best_answer"]
-    return tokenizer(rec["text"], truncation=True)
+    return TOKENIZER(rec["text"], truncation=True)
 
-tokenized_yahoo_answers_topics = yahoo_anwwers_topics.map(preprocess_function).rename_column("topic", "labels")
+TOKENIZED_YAHOO_ANSWERS_TOPICS = YAHOO_ANSWERS_TOPICS.map(preprocess_function).rename_column("topic", "labels")
 
 from transformers import DataCollatorWithPadding
 
-data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+data_collator = DataCollatorWithPadding(tokenizer=TOKENIZER)
 
 accuracy = evaluate.load("accuracy")
 
@@ -49,7 +54,7 @@ def compute_metrics(eval_pred):
 
 
 model = AutoModelForSequenceClassification.from_pretrained(
-    "distilbert-base-uncased", num_labels=10, id2label=id2label, label2id=label2id
+    BERT_MODEL, num_labels=10, id2label=id2label, label2id=label2id
 )
 
 training_args = TrainingArguments(
@@ -68,9 +73,9 @@ training_args = TrainingArguments(
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=tokenized_yahoo_answers_topics["train"],
-    eval_dataset=tokenized_yahoo_answers_topics["test"],
-    tokenizer=tokenizer,
+    train_dataset=TOKENIZED_YAHOO_ANSWERS_TOPICS["train"],
+    eval_dataset=TOKENIZED_YAHOO_ANSWERS_TOPICS["test"],
+    tokenizer=TOKENIZER,
     data_collator=data_collator,
     compute_metrics=compute_metrics,
 )
