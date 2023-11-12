@@ -286,10 +286,10 @@ def add_few_shot_prediction(dataset : Dataset, predictions : List, responses : L
         prompt_type - the type of few shot prompt to use for the model
     """
     text = dataset[i]["text"]
-    # Make prediction using LLM model, with a prompt build either from supervised or random examples
+    # Make prediction using LLM model, with a prompt built either from supervised or random examples
     if prompt_type == FEW_SHOT_SUPERVISED:
         model_response = classify_few_shot(text, SUPERVISED_EXAMPLES)
-    else:SUPERVISED_EXAMPLES
+    else:
         model_response = classify_few_shot(text, RANDOM_EXAMPLES)
     
     # add model response to responses column
