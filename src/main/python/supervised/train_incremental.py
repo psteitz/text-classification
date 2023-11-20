@@ -11,13 +11,13 @@ from datasets import load_dataset
 from StudentTrainer import StudentTrainer
 
 # Directory where the teacher model is saved
-TEACHER_MODEL_DIR = "hf_supervised_model"
+TEACHER_MODEL_DIR = "base_model"
 
 # Directory where the student model will be saved
-STUDENT_MODEL_DIR = "incremental_supervised_model"
+STUDENT_MODEL_DIR = "student_model_0"
 
 # Huggingace Bert model name for distilbert base uncased
-BERT_MODEL = "distilbert-base-uncased"
+BERT_MODEL = "bert-base-uncased"
 
 # load HuggingFace dataset
 YAHOO_ANSWERS_TOPICS = load_dataset("yahoo_answers_topics")
@@ -39,7 +39,7 @@ TOKENIZED_YAHOO_ANSWERS_TOPICS = YAHOO_ANSWERS_TOPICS.map(
     preprocess_function).rename_column("topic", "labels")
 
 TRAIN_DATASET = TOKENIZED_YAHOO_ANSWERS_TOPICS["train"].shard(
-    index=1, num_shards=2)
+    index=1, num_shards=10)
 
 
 DATA_COLLATOR = DataCollatorWithPadding(tokenizer=TOKENIZER)
@@ -76,10 +76,10 @@ MODEL = AutoModelForSequenceClassification.from_pretrained(
 
 TRAINING_ARGS = TrainingArguments(
     output_dir=STUDENT_MODEL_DIR,
-    learning_rate=2e-5,
-    per_device_train_batch_size=20,
-    per_device_eval_batch_size=20,
-    num_train_epochs=2,
+    learning_rate=1e-5,
+    per_device_train_batch_size=8,
+    per_device_eval_batch_size=4,
+    num_train_epochs=3,
     weight_decay=0.01,
     evaluation_strategy="epoch",
     save_strategy="epoch",

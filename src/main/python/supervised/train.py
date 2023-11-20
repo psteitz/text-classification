@@ -12,13 +12,18 @@ from transformers import AutoModelForSequenceClassification, DataCollatorWithPad
 from datasets import load_dataset
 
 # Huggingace model name for distilbert base uncased
-bert_model = "distilbert-base-uncased"
+# bert_model = "distilbert-base-uncased"
+bert_model = "bert-base-uncased"
 
 # load HuggingFace dataset
-yahoo_answers_topics = load_dataset("yahoo_answers_topics")
+yahoo_answers_topics = load_dataset(
+    "yahoo_answers_topics")
 
 # use AutoTokenizer for BERT_MODEL
 tokenizer = AutoTokenizer.from_pretrained(bert_model)
+
+# fine-tuned output model directory
+model_dir = "base_model"
 
 
 def preprocess_function(rec):
@@ -37,7 +42,9 @@ def preprocess_function(rec):
     return tokenizer(rec["text"], truncation=True)
 
 
-tokenized_yahoo_aswers_topics = yahoo_answers_topics.map(
+tokenized_training_dataset = yahoo_answers_topics["train"].shard(index=0, num_shards=10).map(
+    preprocess_function).rename_column("topic", "labels")
+tokenized_eval_dataset = yahoo_answers_topics["test"].map(
     preprocess_function).rename_column("topic", "labels")
 
 
@@ -74,11 +81,11 @@ model = AutoModelForSequenceClassification.from_pretrained(
 )
 
 training_args = TrainingArguments(
-    output_dir="hf_supervised_model",
-    learning_rate=2e-5,
-    per_device_train_batch_size=16,
-    per_device_eval_batch_size=16,
-    num_train_epochs=2,
+    output_dir=model_dir,
+    learning_rate=1e-5,
+    per_device_train_batch_size=8,
+    per_device_eval_batch_size=4,
+    num_train_epochs=3,
     weight_decay=0.01,
     evaluation_strategy="epoch",
     save_strategy="epoch",
@@ -89,16 +96,15 @@ training_args = TrainingArguments(
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=tokenized_yahoo_aswers_topics["train"].shard(
-        index=0, num_shards=2),
-    eval_dataset=tokenized_yahoo_aswers_topics["test"],
+    train_dataset=tokenized_training_dataset,
+    eval_dataset=tokenized_eval_dataset,
     tokenizer=tokenizer,
     data_collator=data_collator,
     compute_metrics=compute_metrics,
 )
 
 trainer.train()
-trainer.save_model("hf_supervised_model")
+trainer.save_model(model_dir)
 
 # Test the trained model
 text = "What are the elements in water?  Water contains hydrogen and oxygen."
