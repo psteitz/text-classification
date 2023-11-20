@@ -25,4 +25,4 @@ For each sample $s$ from $B_i$, if $M_{i - 1}$ responds with a correct and stabl
 ## Implementation using HuggingFace transformers and Trainer
 For student training, we need to replace the standard cross-entrooy loss function that uses a one-hot target vector with one that can take a distribution, computed using the teacher model.  The easiset way to do this is to subclass the [HuggingFace Trainer](https://huggingface.co/docs/transformers/v4.34.1/en/main_classes/trainer#trainer) class, overriding its [compute_loss](https://github.com/huggingface/transformers/blob/v4.34.1/src/transformers/trainer.py#L2791) function.  The implementation code is in the [supervised](https://github.com/psteitz/text-classification/blob/main/src/main/python/supervised) module, which includes the [subclassed HuggingFace Trainer](https://github.com/psteitz/text-classification/blob/main/src/main/python/supervised/StudentTrainer.py)
 
-[1] If $M_0$ consumes $B_0$ then $M_{i}$ is trained using data from $B_{i + 1}$ thereafter.
+[^1] If $M_0$ consumes $B_0$ then $M_{i}$ is trained using data from $B_{i + 1}$ thereafter.
