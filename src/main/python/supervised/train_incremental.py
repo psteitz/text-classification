@@ -25,8 +25,8 @@ YAHOO_ANSWERS_TOPICS = load_dataset("yahoo_answers_topics")
 # use AutoTokenizer for BERT_MODEL
 TOKENIZER = AutoTokenizer.from_pretrained(BERT_MODEL)
 
-# Threshold for teacher mass on correct label to replace one-hot target distribution
-THRESHOLD = 0.85
+# Amount that teacher model correct answer has to win by in order for student to use it
+THRESHOLD = 0.1
 
 
 def preprocess_function(rec):

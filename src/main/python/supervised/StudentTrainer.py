@@ -63,18 +63,24 @@ class StudentTrainer(Trainer):
         targets = torch.nn.functional.one_hot(labels, num_classes=10).float()
         # print("targets", targets)
 
-        # Walk the teacher_logits tensor, checking to see if the teacher got it right and put enough mass on the correct label
+        # Examine the teacher_logits tensor, checking to see if the teacher response is correct and
+        # stable.  Stable means that the difference between the softmax score of the correct label
+        # is at least self.threshold greater than the softmax score of the next highest label.
         # If so, replace the corresponding one-hot target with the teacher's predicted distribution
         for i in range(batch_size):
             correct_label = labels[i]
             teacher_predicted_distribution = torch.softmax(
                 teacher_logits[i], dim=0)
-            if torch.argmax(teacher_predicted_distribution) == correct_label\
-                    and teacher_predicted_distribution[correct_label] > self.threshold:
-                # use teacher prediction
-                # print("Updating target ", i, "using teacher predicted distribution ", teacher_predicted_distribution)
-                targets[i, :] = teacher_predicted_distribution
-                StudentTrainer.Teacher_correct_count += 1
+            if torch.argmax(teacher_predicted_distribution) == correct_label:
+                # teacher got it right
+                # Now check to make sure the difference between the softmax score of the correct label
+                # is at least self.threshold greater than the softmax score of the next highest label
+                sorted_distribution = torch.sort(
+                    teacher_predicted_distribution, descending=True)
+                if sorted_distribution[0][0] - sorted_distribution[0][1] > self.threshold:
+                    # Replace the one-hot target with the teacher's predicted distribution
+                    targets[i, :] = teacher_predicted_distribution
+                    StudentTrainer.Teacher_correct_count += 1
 
         # set loss function to cross entropy loss between logits and targets
         loss_function = nn.CrossEntropyLoss()
