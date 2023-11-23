@@ -33,8 +33,12 @@ class Inference:
 
         Arguments:
             augmented_dataset_dir - the directory to store the augmented dataset
+
             fully_augmented_dataset_dir - the directory to store the fully augmented dataset
+
             model_directory - the directory containing the model
+
+            hf_dataset_name - the name of the huggingface dataset to load
         """
         self.model = AutoModelForSequenceClassification.from_pretrained(
             model_directory)
