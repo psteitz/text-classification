@@ -6,9 +6,10 @@ yahoo_answers_topics_augmented/
 data/
 # Models
 hf_supervised_model/
-base_model/
+base_model*/
 hf_supervised_model_0/
 student_model_*/
+
 # vscode
 .vscode/
 # End local mods
