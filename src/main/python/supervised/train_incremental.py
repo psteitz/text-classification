@@ -3,12 +3,13 @@
 """
 train_incremental.py: Implements incremental training to train a supervised text classifier.
 """
-import numpy as np
+
 import evaluate
 from transformers import DataCollatorWithPadding, AutoModelForSequenceClassification, \
     TrainingArguments, AutoTokenizer, pipeline
 from datasets import load_dataset
 from StudentTrainer import StudentTrainer
+from train_utils import compute_metrics, preprocess_function
 
 # Directory where the teacher model is saved
 TEACHER_MODEL_DIR = "base_model"
@@ -26,13 +27,7 @@ YAHOO_ANSWERS_TOPICS = load_dataset("yahoo_answers_topics")
 TOKENIZER = AutoTokenizer.from_pretrained(BERT_MODEL)
 
 # Amount that teacher model correct answer has to win by in order for student to use it
-THRESHOLD = 0.1
-
-
-def preprocess_function(rec):
-    rec["text"] = rec["question_title"] + " " + \
-        rec["question_content"] + " " + rec["best_answer"]
-    return TOKENIZER(rec["text"], truncation=True)
+THRESHOLD = 0.4
 
 
 TOKENIZED_YAHOO_ANSWERS_TOPICS = YAHOO_ANSWERS_TOPICS.map(
@@ -44,7 +39,7 @@ TRAIN_DATASET = TOKENIZED_YAHOO_ANSWERS_TOPICS["train"].shard(
 
 DATA_COLLATOR = DataCollatorWithPadding(tokenizer=TOKENIZER)
 
-accuracy = evaluate.load("accuracy")
+ACCURACY = evaluate.load("accuracy")
 
 YAHOO_CLASSES = [
     "society or culture",
@@ -63,14 +58,7 @@ id2label = {i: label for i, label in enumerate(YAHOO_CLASSES)}
 
 label2id = {label: i for i, label in enumerate(YAHOO_CLASSES)}
 
-
-def compute_metrics(eval_pred):
-    predictions, labels = eval_pred
-    predictions = np.argmax(predictions, axis=1)
-    return accuracy.compute(predictions=predictions, references=labels)
-
-
-MODEL = AutoModelForSequenceClassification.from_pretrained(
+BASE_MODEL = AutoModelForSequenceClassification.from_pretrained(
     BERT_MODEL, num_labels=10, id2label=id2label, label2id=label2id
 )
 
@@ -88,7 +76,7 @@ TRAINING_ARGS = TrainingArguments(
 )
 
 TRAINER = StudentTrainer(
-    model=MODEL,
+    model=BASE_MODEL,
     args=TRAINING_ARGS,
     train_dataset=TRAIN_DATASET,
     eval_dataset=TOKENIZED_YAHOO_ANSWERS_TOPICS["test"],

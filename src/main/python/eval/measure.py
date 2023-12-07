@@ -229,14 +229,28 @@ def show_mistakes(dataset: Dataset, confusion: List, num_mistakes: int = -1, num
 
 # confusion = confusion("../supervised/data/hf_yahoo_data_augmented")
 # confusion = confusion("../mnli/hf_yahoo_data_augmented")
-data_dir = "../supervised/data/hf_yahoo_data_augmented_full"
-confusion_matrix = confusion_matrix(data_dir)
+base_data_dir = "../supervised/data/hf_yahoo_data_augmented_base"
+base_confusion_matrix = confusion_matrix(base_data_dir)
 # Put into a dataframe, replacing lists with counts.  This makes a standard confusion matrix.
-frame = pd.DataFrame(confusion_matrix)
-for i in range(len(frame)):
-    frame[i] = frame[i].map(lambda x: len(x))
+base_frame = pd.DataFrame(base_confusion_matrix)
+for i in range(len(base_frame)):
+    base_frame[i] = base_frame[i].map(lambda x: len(x))
 print("Confusion matrix: rows are predicted labels, columns are correct labels")
-print(frame)
+print(base_frame)
 # Calculate and display metrics from the augmented confusion matrix
-show_metrics(metrics(confusion_matrix))
+print("Base model metrics:")
+show_metrics(metrics(base_confusion_matrix))
+# show_mistakes(load_from_disk(data_dir), confusion_matrix, 10)
+
+student_data_dir = "../supervised/data/hf_yahoo_data_augmented_student"
+student_confusion_matrix = confusion_matrix(student_data_dir)
+# Put into a dataframe, replacing lists with counts.  This makes a standard confusion matrix.
+student_frame = pd.DataFrame(student_confusion_matrix)
+for i in range(len(student_frame)):
+    student_frame[i] = student_frame[i].map(lambda x: len(x))
+print("Confusion matrix: rows are predicted labels, columns are correct labels")
+print(student_frame)
+# Calculate and display metrics from the augmented confusion matrix
+print("Student model metrics:")
+show_metrics(metrics(student_confusion_matrix))
 # show_mistakes(load_from_disk(data_dir), confusion_matrix, 10)

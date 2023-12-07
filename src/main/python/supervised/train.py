@@ -1,56 +1,66 @@
 #!/usr/bin/env python
 
 """
-train.py: trains huggingface distilbert-base-uncaset model to classify texts in
-hf yahoo_answers_topics dataset
+train.py: Trains huggingface base transormer model to classify texts in
+hf yahoo_answers_topics dataset.
 """
-
-import numpy as np
 import evaluate
 from transformers import AutoModelForSequenceClassification, DataCollatorWithPadding, \
     TrainingArguments, Trainer, AutoTokenizer, pipeline
 from datasets import load_dataset
+from train_utils import compute_metrics, preprocess_function
 
 # Huggingace model name for distilbert base uncased
 # bert_model = "distilbert-base-uncased"
-bert_model = "bert-base-uncased"
+BERT_MODEL = "bert-base-uncased"
 
 # load HuggingFace dataset
-yahoo_answers_topics = load_dataset(
+YAHOO_ANSERS_TOPICS = load_dataset(
     "yahoo_answers_topics")
 
 # use AutoTokenizer for BERT_MODEL
-tokenizer = AutoTokenizer.from_pretrained(bert_model)
+TOKENIZER = AutoTokenizer.from_pretrained(BERT_MODEL)
+# truncate at 512 tokens
+# leave padding at default
+print("Using tokenizer: ", TOKENIZER)
 
 # fine-tuned output model directory
-model_dir = "base_model"
+# This directory is created if it doesn't exist and overwritten if it does
+OUTPUT_MODEL_DIR = "base_model_from_seg_1"
+print("Writing to output model directory: ", OUTPUT_MODEL_DIR)
 
 
-def preprocess_function(rec):
+def preprocess(rec):
     """
-    Preprocesses a record from the dataset by combining the question title,
-    question content, and best answer into a single text string and then
-    tokenizing the text string using the tokenizer.
+    Preprocess a record rec from the dataset.
+
+    Combine the question title, question content, and best answer into a new combined "text" field.
+
+    Add the "text" field to rec.
+
+    Return tokenizer(rec["text"]).
 
     Arguments:
-        rec - record from the dataset
+        rec - record from the dataset (in/out - modified by this function)
+        tokenizer - tokenizer to use to tokenize the "text" field
+
     Returns:
         dictionary containing the tokenized text string
     """
     rec["text"] = rec["question_title"] + " " + \
         rec["question_content"] + " " + rec["best_answer"]
-    return tokenizer(rec["text"], truncation=True)
+    return TOKENIZER(rec["text"], truncation=True)
 
 
-tokenized_training_dataset = yahoo_answers_topics["train"].shard(index=0, num_shards=10).map(
-    preprocess_function).rename_column("topic", "labels")
-tokenized_eval_dataset = yahoo_answers_topics["test"].map(
-    preprocess_function).rename_column("topic", "labels")
+TRAIN_DATASET = YAHOO_ANSERS_TOPICS["train"].shard(index=1, num_shards=10).map(
+    preprocess).rename_column("topic", "labels")
+EVAL_DATASET = YAHOO_ANSERS_TOPICS["test"].map(
+    preprocess).rename_column("topic", "labels")
 
 
-data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+DATA_COLLATOR = DataCollatorWithPadding(tokenizer=TOKENIZER)
 
-accuracy = evaluate.load("accuracy")
+ACCURACY = evaluate.load("accuracy")
 
 YAHOO_CLASSES = [
     "society or culture",
@@ -65,23 +75,16 @@ YAHOO_CLASSES = [
     "politics or government"
 ]
 
-id2label = {i: label for i, label in enumerate(YAHOO_CLASSES)}
+ID2LABEL = {i: label for i, label in enumerate(YAHOO_CLASSES)}
 
-label2id = {label: i for i, label in enumerate(YAHOO_CLASSES)}
+LABEL2ID = {label: i for i, label in enumerate(YAHOO_CLASSES)}
 
-
-def compute_metrics(eval_pred):
-    predictions, labels = eval_pred
-    predictions = np.argmax(predictions, axis=1)
-    return accuracy.compute(predictions=predictions, references=labels)
-
-
-model = AutoModelForSequenceClassification.from_pretrained(
-    bert_model, num_labels=10, id2label=id2label, label2id=label2id
+MODEL = AutoModelForSequenceClassification.from_pretrained(
+    BERT_MODEL, num_labels=10, id2label=ID2LABEL, label2id=LABEL2ID
 )
 
-training_args = TrainingArguments(
-    output_dir=model_dir,
+TRAINING_ARGS = TrainingArguments(
+    output_dir=OUTPUT_MODEL_DIR,
     learning_rate=1e-5,
     per_device_train_batch_size=8,
     per_device_eval_batch_size=4,
@@ -93,22 +96,23 @@ training_args = TrainingArguments(
     push_to_hub=False,
 )
 
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=tokenized_training_dataset,
-    eval_dataset=tokenized_eval_dataset,
-    tokenizer=tokenizer,
-    data_collator=data_collator,
+TRAINER = Trainer(
+    model=MODEL,
+    args=TRAINING_ARGS,
+    train_dataset=TRAIN_DATASET,
+    eval_dataset=EVAL_DATASET,
+    tokenizer=TOKENIZER,
+    data_collator=DATA_COLLATOR,
     compute_metrics=compute_metrics,
 )
 
-trainer.train()
-trainer.save_model(model_dir)
+TRAINER.train()
+TRAINER.save_model(OUTPUT_MODEL_DIR)
 
-# Test the trained model
+"""
+Example use of the trained model.
+"""
 text = "What are the elements in water?  Water contains hydrogen and oxygen."
-
 classifier = pipeline("text-classification", model="./hf_supervised_model")
 print(classifier(text))
 # Display should look like:

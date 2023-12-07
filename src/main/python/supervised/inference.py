@@ -1,3 +1,6 @@
+"""
+Inference class: encapsulates the supervised model and provides methods for inference.
+"""
 from datetime import datetime
 import random
 from pathlib import Path
@@ -237,11 +240,18 @@ class Inference:
 #   ^^^ needs to point to a pre-trained supervised model
 #
 
-inference = Inference("./data//hf_yahoo_data_augmented_full",
-                      "./data/hf_yahoo_data_fully_augmented",
-                      "./hf_supervised_model_0",
-                      "yahoo_answers_topics")
-inference.classify_dataset("test")
+inference_base = Inference("./data//hf_yahoo_data_augmented_base",
+                           "./data/hf_yahoo_data_fully_augmented",
+                           "./base_model_from_seg_1",
+                           "yahoo_answers_topics")
+inference_base.classify_dataset("test")
+
+inference_student = Inference("./data//hf_yahoo_data_augmented_student",
+                              "./data/hf_yahoo_data_fully_augmented",
+                              "./student_model_0",
+                              "yahoo_answers_topics")
+inference_student.classify_dataset("test")
+
 """
 print("classify method demo:")
 inference = Inference()
