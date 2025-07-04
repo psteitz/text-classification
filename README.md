@@ -14,7 +14,8 @@ See [HuggingFace tutorial](https://huggingface.co/docs/transformers/tasks/sequen
 * Always the fastest
 * Always lowest cost
 * Models can be small
-Supervised implementations are in the [suppervised module](https://github.com/psteitz/text-classification/blob/main/src/main/python/supervised).  In addition to the standard implementation using cross-entropy loss computed against one-hot vectors, the supervised module also includes an [incremental training](https://github.com/psteitz/text-classification/blob/main/src/docs/supervised/incremental.md) implementation that uses teacher-student training and a customized loss function. Our hypothesis is that this training method, which aims to help student models learn classfication distributions, will generalize better when texts naturally fall under multiple classifications.
+  
+Supervised implementations are in the [supervised module](https://github.com/psteitz/text-classification/blob/main/src/main/python/supervised).  In addition to the standard implementation using cross-entropy loss computed against one-hot vectors, the supervised module also includes an [incremental training](https://github.com/psteitz/text-classification/blob/main/src/docs/supervised/incremental.md) implementation that uses teacher-student training and a customized loss function. Our hypothesis is that this training method, which aims to help student models learn classfication distributions, will generalize better when texts naturally fall under multiple classifications.
 
 ## Zero-shot using mnli model
 Start with a pre-trained transformer model fine-tuned for mnli tasks and translate the classification task into an inference task.
